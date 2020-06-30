@@ -1,0 +1,14 @@
+html {
+  background-color: #ccc;
+}
+#canvas, #buttons, .error {
+  width: 640px;
+  margin: 1rem auto;
+  border: 3px solid #666;
+}
+#canvas {
+  height: 480px;
+}
+h1 {
+  text-align: center;
+}

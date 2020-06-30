@@ -1,0 +1,7 @@
+{
+  "name": "wscapture",
+  "private": true,
+  "devDependencies": {
+    "rollup": "^2.18.1"
+  }
+}
