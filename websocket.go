@@ -41,6 +41,10 @@ func (h *handler) getSocket(w http.ResponseWriter, r *http.Request) {
 		log:      h.log,
 		hasFrame: make(chan bool, 1),
 		encoder:  e,
+		length:   -1,
+	}
+	if h.config.length >= 0.0 {
+		s.length = int(math.Round(h.config.length * h.config.framerate))
 	}
 	go s.read()
 	go s.write()
@@ -54,6 +58,7 @@ type stream struct {
 	frameCount uint32
 	hasFrame   chan bool
 	encoder    encoder
+	length     int
 }
 
 func (s *stream) close() {
@@ -69,6 +74,8 @@ func (s *stream) error(msg string, err error) {
 }
 
 func (s *stream) read() {
+	startTime := time.Now()
+	lastStatus := startTime
 	var frameCount uint32
 	defer close(s.done)
 	size := messageSize(s.config)
@@ -112,6 +119,18 @@ func (s *stream) read() {
 			select {
 			case s.hasFrame <- true:
 			default:
+			}
+			now := time.Now()
+			if now.Sub(lastStatus) > time.Second {
+				lastStatus = now
+				fps := float64(frameCount) / now.Sub(startTime).Seconds()
+				if s.length > 0 {
+					s.log.Infof("Frame %d/%d [%.1f%%] (%.2f FPS)",
+						frameCount, s.length,
+						100.0*float64(frameCount)/float64(s.length), fps)
+				} else {
+					s.log.Infof("Frame %d (%.2f FPS)", frameCount, fps)
+				}
 			}
 			if err := s.encoder.write(buf[:pos]); err != nil {
 				s.log.Error(err)
@@ -165,10 +184,7 @@ func (s *stream) sendStart() error {
 		Width:     s.config.width,
 		Height:    s.config.height,
 		FrameRate: s.config.framerate,
-		Length:    -1,
-	}
-	if s.config.length >= 0.0 {
-		m.Length = int(math.Round(s.config.length * s.config.framerate))
+		Length:    s.length,
 	}
 	data, err := json.Marshal(&m)
 	if err != nil {
