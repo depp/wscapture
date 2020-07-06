@@ -67,6 +67,22 @@ Modify your app to use WSCapture.
 
 ## Options
 
+- `-http=<addr>`: Listen at address `<addr>`, by default `localhost:8080`.
+
+- `-length=<t>`: Length of the video to record, in seconds.
+
+- `-ping-interval=<t>`: The interval for pinging the Web Socket.
+
+- `-rate=<rate>`: The framerate, in fps.
+
+- `-root=<dir>`: Serve app files from this directory.
+
+- `-size=<w>x<h>`: Video size, in pixels. Defaults to 640x480.
+
+- `-timeout=<t>`: Web socket timeout. Should usually be generous, defaults to 10s, but you may want to increase it.
+
+- `-videos=<dir>`: Save videos in this directory.
+
 ## Example
 
 See `demo/wscapture.js`. You can run the demo app by:
