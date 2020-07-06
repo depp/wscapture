@@ -1,6 +1,6 @@
 # WSCapture - Capture Video over Web Sockets
 
-WSCapture is a tool for capturing nice, smooth video from a WebGL context. **This tool is a horrible, horrible hack.** It sure produces nice results, though! Rather than simply capturing the output of the screen in real-time, WSCapture captures video offline so you get no jitter and no dropped frames—just smooth video. The video is transferred over WebSocket to FFmpeg for encoding.
+WSCapture is a tool for capturing nice, smooth video from a WebGL or 2D canvas context. **This tool is a horrible, horrible hack.** It sure produces nice results, though! Rather than simply capturing the output of the screen in real-time, WSCapture captures video offline so you get no jitter and no dropped frames—just smooth video. The video is transferred over WebSocket to FFmpeg for encoding.
 
 Captured video example: [City Knot (demoscene)](https://www.youtube.com/watch?v=asV6yIC_bsk)
 
@@ -42,9 +42,9 @@ Modify your app to use WSCapture.
 
 1. Call WSCapture functions to start recording.
 
-    - `WSCapture.setContext(gl)`: Uses `gl` as the WebGL context for recording. WSCapture will modify the size of the attached canvas to match the size of the video.
+    - `WSCapture.setContext(ctx)`: Uses `ctx` as the WebGL or 2D canvas context for recording. WSCapture will modify the size of the attached canvas to match the size of the video.
 
-    - `WSCapture.stealContext()`: If you do not have access to the WebGL context, you can call `stealContext()` before the context is created. This will save the result of the next call to `HTMLCanvasElement.getContext()`. This is useful if the WebGL context is hidden inside a library.
+    - `WSCapture.stealContext()`: If you do not have access to the drawing context, you can call `stealContext()` before the context is created. This will save the result of the next call to `HTMLCanvasElement.getContext()`. This is useful if the context is hidden inside a library.
 
     - `WSCapture.startRecording()`: Starts recording a video. This kicks off a request in the background.
 

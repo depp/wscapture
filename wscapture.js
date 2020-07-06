@@ -1,33 +1,35 @@
-let glContext = null;
+let context = null;
 const maxOutstanding = 10;
 
-function isGLContext(gl) {
+function isContext(ctx) {
   return (
-    gl instanceof WebGLRenderingContext || gl instanceof WebGL2RenderingContext
+    ctx instanceof CanvasRenderingContext2D ||
+    ctx instanceof WebGLRenderingContext ||
+    ctx instanceof WebGL2RenderingContext
   );
 }
 
-export async function setContext(gl) {
-  if (gl == null) {
-    glContext = null;
+export async function setContext(ctx) {
+  if (ctx == null) {
+    context = null;
     return;
   }
-  if (!isGLContext(gl)) {
-    console.error('Not a WebGLRenderingContext');
+  if (!isContext(ctx)) {
+    console.error('Not a rendering context');
     return;
   }
-  glContext = gl;
+  context = ctx;
 }
 
-// Steal the result of the next call to getContext that returns a WebGL context.
+// Steal the result of the next call to getContext.
 export function stealContext() {
   const oldGetContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function getContext() {
     const result = oldGetContext.apply(this, arguments);
-    if (isGLContext(result)) {
-      glContext = result;
+    if (isContext(result)) {
+      cContext = result;
     } else {
-      console.warn('Not a WebGLRenderingContext', result);
+      console.warn('Not a 2D or WebGL context', result);
     }
     HTMLCanvasElement.prototype.getContext = oldGetContext;
     return result;
@@ -173,17 +175,31 @@ export function beginFrame() {
   if (recording == null) {
     return ws == null;
   }
-  const gl = glContext;
-  if (gl == null) {
-    console.warn('No GL context.');
+  const ctx = context;
+  if (ctx == null) {
+    console.warn('No context.');
     return false;
   }
-  const { canvas, drawingBufferWidth, drawingBufferHeight } = gl;
-  recording.ready = false;
   const { width, height } = recording;
-  if (width != drawingBufferWidth || height != drawingBufferHeight) {
+  const { canvas } = context;
+  recording.ready = false;
+  let cwidth, cheight;
+  if (
+    ctx instanceof WebGLRenderingContext ||
+    ctx instanceof WebGL2RenderingContext
+  ) {
+    cwidth = ctx.drawingBufferWidth;
+    cheight = ctx.drawingBufferHeight;
+  } else if (ctx instanceof CanvasRenderingContext2D) {
+    cwidth = canvas.width;
+    cheight = canvas.height;
+  } else {
+    console.error('Unknown context type');
+    return false;
+  }
+  if (width != cwidth || height != cheight) {
     console.log(
-      `Resizing canvas from ${drawingBufferWidth}x${drawingBufferHeight} to ${width}x${height}`,
+      `Resizing canvas from ${cwidth}x${cheight} to ${width}x${height}`,
     );
     canvas.width = width;
     canvas.height = height;
@@ -201,13 +217,32 @@ export function endFrame() {
   if (recording == null || !recording.ready) {
     return;
   }
-  const gl = glContext;
-  if (gl == null) {
+  const ctx = context;
+  if (ctx == null) {
     return;
   }
   const { width, height } = recording;
-  const buffer = new Uint8Array(width * height * 4);
-  gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+  let buffer;
+  if (
+    ctx instanceof WebGLRenderingContext ||
+    ctx instanceof WebGL2RenderingContext
+  ) {
+    const temp = new Uint8Array(width * height * 4);
+    ctx.readPixels(0, 0, width, height, ctx.RGBA, ctx.UNSIGNED_BYTE, temp);
+    buffer = new Uint8Array(width * height * 4);
+    for (let y = 0; y < height; y++) {
+      buffer.set(
+        temp.subarray(width * y * 4, width * (y + 1) * 4),
+        width * (height - y - 1) * 4,
+      );
+    }
+  } else if (ctx instanceof CanvasRenderingContext2D) {
+    const image = ctx.getImageData(0, 0, width, height);
+    buffer = image.data;
+  } else {
+    console.error('Unknown context type');
+    return;
+  }
   ws.send(buffer);
   recording.pos++;
   if (recording.length >= 0 && recording.pos >= recording.length) {

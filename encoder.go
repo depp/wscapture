@@ -59,7 +59,6 @@ func newFFmpegEncoder(log *log.Logger, c *config) (e *pipeEncoder, err error) {
 		"-r", strconv.FormatFloat(c.framerate, 'f', -1, 64),
 		"-s", fmt.Sprintf("%dx%d", c.width, c.height),
 		"-i", "pipe:3",
-		"-filter:v", "vflip",
 		"-codec:v", "libx264",
 		"-preset", "fast",
 		"-crf", "18",
