@@ -79,13 +79,15 @@ Modify your app to use WSCapture.
 
 - `-root=<dir>`: Serve app files from this directory.
 
-- `-size=<w>x<h>`: Video size, in pixels. Defaults to 640x480.
+- `-size=<w>x<h>`: Video size, in pixels. Defaults to 640x480. You may also use 240p, 360p, 480p, 720p, 1080p, 1440p, or 2160p.
 
 - `-timeout=<t>`: Web socket timeout. Should usually be generous, defaults to 10s, but you may want to increase it.
 
 - `-videos=<dir>`: Save videos in this directory.
 
 ### Encoding Options
+
+- `-format=<format>`: Encoding format. Defaults to mkv.
 
 - `-codec=<codec>`: FFmpeg video codec, default libx264.
 
@@ -115,3 +117,5 @@ Go to http://localhost:8080/index.html to see the demo.
 Press “GL Start” or “GL Stop” to start or stop drawing an animation on-screen using WebGL.
 
 Press “Record Start” or “Record Stop” to start or stop recording video. The video will not record while the WebGL animation is not running, so you must make sure to do that. The videos will appear in the `videos` folder, which is automatically created.
+
+## Twitter

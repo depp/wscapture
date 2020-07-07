@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -80,7 +81,13 @@ func newFFmpegEncoder(log *log.Logger, c *config) (e *pipeEncoder, err error) {
 		return nil, err
 	}
 	name := time.Now().Format(fileNameFormat)
-	const extension = ".mkv"
+	extension := c.format
+	if extension == "" {
+		return nil, errors.New("invalid video format, must not be empty")
+	}
+	if !strings.HasPrefix(extension, ".") {
+		extension = "." + extension
+	}
 	fname := name + extension
 	fpath := filepath.Join(c.videoDir, fname)
 	switch _, err := os.Stat(fpath); {

@@ -30,13 +30,43 @@ type config struct {
 	timeout      time.Duration
 	pingInterval time.Duration
 
+	format        string
 	encodeOptions []string
 }
+
+var presetSizes = [...][2]int{
+	{426, 240},
+	{640, 360},
+	{854, 480},
+	{1280, 720},
+	{1920, 1080},
+	{2560, 1440},
+	{3840, 2160},
+}
+
+var errInvalidSize = errors.New("invalid size: should have format <width>x<height> or <height>p")
 
 func parseSize(size string) (int, int, error) {
 	i := strings.IndexByte(size, 'x')
 	if i == -1 {
-		return 0, 0, errors.New("invalid size: should have format <width>x<height>")
+		if strings.HasSuffix(size, "p") {
+			ws := size[:len(size)-1]
+			w, err := strconv.ParseInt(ws, 10, strconv.IntSize)
+			if err != nil || w < 0 {
+				return 0, 0, errInvalidSize
+			}
+			for _, s := range presetSizes {
+				if s[1] == int(w) {
+					return s[0], s[1], nil
+				}
+			}
+			var r []string
+			for _, s := range presetSizes {
+				r = append(r, strconv.Itoa(s[1])+"p")
+			}
+			return 0, 0, fmt.Errorf("invalid size %q: valid presets are %s", size, strings.Join(r, ", "))
+		}
+		return 0, 0, errInvalidSize
 	}
 	ws := size[:i]
 	hs := size[i+1:]
@@ -63,6 +93,7 @@ func mainE() error {
 	flag.Float64Var(&config.length, "length", -1.0, "Length of video to record, in seconds, or -1 for unlimited")
 	flag.DurationVar(&config.timeout, "timeout", 10*time.Second, "Web socket timeout")
 	flag.DurationVar(&config.pingInterval, "ping-interval", 20*time.Second, "Web socket ping interval")
+	flag.StringVar(&config.format, "format", "mkv", "Video container format")
 	ec.addFlags()
 	flag.Parse()
 	var err error
@@ -77,6 +108,7 @@ func mainE() error {
 	}
 	config.wsRoot = filepath.Dir(exe)
 	lg := log.New()
+	lg.Infof("Size: %dx%d", config.width, config.height)
 	lg.Infoln("Encoding options:", strings.Join(config.encodeOptions, " "))
 	l, err := net.Listen("tcp", config.listen)
 	if err != nil {
