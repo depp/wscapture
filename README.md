@@ -103,6 +103,10 @@ Modify your app to use WSCapture.
 
 - `-encode_options=<options>`: Additional options to pass to libx264, separated by spaces.
 
+### Preset Options
+
+- `-twitter`: Attempts to produces a video that can be uploaded directly to Twitter. Uses mp4 format, yuv420p pixel format, and high profile. Defaults to 1280x720.
+
 ## Example
 
 See `demo/wscapture.js`. You can run the demo app by:

@@ -22,20 +22,39 @@ type encodeConfig struct {
 	pixFormat string
 	tune      string
 	extra     string
+	twitter   bool
 }
 
 func (c *encodeConfig) addFlags() {
-	flag.StringVar(&c.codec, "codec", "libx264", "FFmpeg codec")
+	flag.StringVar(&c.codec, "codec", "", "FFmpeg codec")
 	flag.IntVar(&c.crf, "crf", -1, "CRF (lower numbers are higher quality)")
 	flag.StringVar(&c.preset, "preset", "", "encoder preset")
 	flag.StringVar(&c.profile, "profile", "", "encoder profile")
 	flag.StringVar(&c.pixFormat, "pix_fmt", "", "video pixel format")
 	flag.StringVar(&c.tune, "tune", "", "encoder tuning")
 	flag.StringVar(&c.extra, "encode_options", "", "encoder options")
+	flag.BoolVar(&c.twitter, "twitter", false, "Optimize for Twitter")
 }
 
-func (c *encodeConfig) options() []string {
+func (c *encodeConfig) options() ([]string, error) {
+	if c.twitter {
+		if c.codec != "" {
+			return nil, errors.New("cannot use -codec with -twitter")
+		}
+		c.codec = "libx264"
+		if c.profile != "" {
+			return nil, errors.New("cannot use -profile with -twitter")
+		}
+		c.profile = "high"
+		if c.pixFormat != "" {
+			return nil, errors.New("cannot use -pix_fmt with -twitter")
+		}
+		c.pixFormat = "yuv420p"
+	}
 	var r []string
+	if c.codec == "" {
+		c.codec = "libx264"
+	}
 	if c.codec == "libx264" {
 		if c.crf == 0 {
 			c.crf = 18
@@ -54,11 +73,14 @@ func (c *encodeConfig) options() []string {
 	if c.profile != "" {
 		r = append(r, "-profile:v", c.profile)
 	}
+	if c.pixFormat != "" {
+		r = append(r, "-pix_fmt", c.pixFormat)
+	}
 	if c.tune != "" {
 		r = append(r, "-tune:v", c.tune)
 	}
 	r = append(r, strings.Fields(c.extra)...)
-	return r
+	return r, nil
 }
 
 const fileNameFormat = "2006-01-02T15-04-05"

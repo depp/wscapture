@@ -88,20 +88,41 @@ func mainE() error {
 	flag.StringVar(&config.listen, "http", "localhost:8080", "Listen at address `addr`")
 	flag.StringVar(&config.appRoot, "root", ".", "Serve files from `dir`")
 	flag.StringVar(&config.videoDir, "videos", "videos", "Directory to store videos")
-	flag.StringVar(&size, "size", "640x480", "Video size")
+	flag.StringVar(&size, "size", "", "Video size")
 	flag.Float64Var(&config.framerate, "rate", 30.0, "Record at `rate` fps")
 	flag.Float64Var(&config.length, "length", -1.0, "Length of video to record, in seconds, or -1 for unlimited")
 	flag.DurationVar(&config.timeout, "timeout", 10*time.Second, "Web socket timeout")
 	flag.DurationVar(&config.pingInterval, "ping-interval", 20*time.Second, "Web socket ping interval")
-	flag.StringVar(&config.format, "format", "mkv", "Video container format")
+	flag.StringVar(&config.format, "format", "", "Video container format")
 	ec.addFlags()
 	flag.Parse()
 	var err error
-	config.width, config.height, err = parseSize(size)
+	if size == "" {
+		if ec.twitter {
+			config.width = 1280
+			config.height = 720
+		} else {
+			config.width = 640
+			config.height = 480
+		}
+	} else {
+		config.width, config.height, err = parseSize(size)
+		if err != nil {
+			return err
+		}
+	}
+	if ec.twitter {
+		if config.format != "" {
+			return errors.New("cannot use -format with -twitter")
+		}
+		config.format = "mp4"
+	} else if config.format == "" {
+		config.format = "mkv"
+	}
+	config.encodeOptions, err = ec.options()
 	if err != nil {
 		return err
 	}
-	config.encodeOptions = ec.options()
 	exe, err := os.Executable()
 	if err != nil {
 		return err
