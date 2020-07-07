@@ -4,7 +4,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -74,13 +76,23 @@ func mainE() error {
 		return err
 	}
 	config.wsRoot = filepath.Dir(exe)
-	l := log.New()
-	l.Infoln("Encoding options:", strings.Join(config.encodeOptions, " "))
-	h := &handler{
-		log:    l,
+	lg := log.New()
+	lg.Infoln("Encoding options:", strings.Join(config.encodeOptions, " "))
+	l, err := net.Listen("tcp", config.listen)
+	if err != nil {
+		return err
+	}
+	lg.Infof("Listening at %s", &url.URL{
+		Scheme: "http",
+		Host:   config.listen,
+		Path:   "/",
+	})
+	h := handler{
+		log:    lg,
 		config: &config,
 	}
-	return http.ListenAndServe(config.listen, h)
+	s := http.Server{Handler: &h}
+	return s.Serve(l)
 }
 
 func main() {
