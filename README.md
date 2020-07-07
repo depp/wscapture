@@ -67,6 +67,8 @@ Modify your app to use WSCapture.
 
 ## Options
 
+### General Options
+
 - `-http=<addr>`: Listen at address `<addr>`, by default `localhost:8080`.
 
 - `-length=<t>`: Length of the video to record, in seconds.
@@ -82,6 +84,22 @@ Modify your app to use WSCapture.
 - `-timeout=<t>`: Web socket timeout. Should usually be generous, defaults to 10s, but you may want to increase it.
 
 - `-videos=<dir>`: Save videos in this directory.
+
+### Encoding Options
+
+- `-codec=<codec>`: FFmpeg video codec, default libx264.
+
+- `-crf=<n>`: Encoding CRF, defaults to 18 if codec is libx264.
+
+- `-preset=<preset>`: Encoding preset, defaults to fast if codec is libx264.
+
+- `-profile=<profile>`: Encoding profile.
+
+- `-pix_fmt=<fmt>`: Encoding pixel format.
+
+- `-tune=<tune>`: Encoding tuning preset.
+
+- `-encode_options=<options>`: Additional options to pass to libx264, separated by spaces.
 
 ## Example
 

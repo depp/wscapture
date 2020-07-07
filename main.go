@@ -27,6 +27,8 @@ type config struct {
 
 	timeout      time.Duration
 	pingInterval time.Duration
+
+	encodeOptions []string
 }
 
 func parseSize(size string) (int, int, error) {
@@ -50,6 +52,7 @@ func parseSize(size string) (int, int, error) {
 func mainE() error {
 	var config config
 	var size string
+	var ec encodeConfig
 	flag.StringVar(&config.listen, "http", "localhost:8080", "Listen at address `addr`")
 	flag.StringVar(&config.appRoot, "root", ".", "Serve files from `dir`")
 	flag.StringVar(&config.videoDir, "videos", "videos", "Directory to store videos")
@@ -58,19 +61,23 @@ func mainE() error {
 	flag.Float64Var(&config.length, "length", -1.0, "Length of video to record, in seconds, or -1 for unlimited")
 	flag.DurationVar(&config.timeout, "timeout", 10*time.Second, "Web socket timeout")
 	flag.DurationVar(&config.pingInterval, "ping-interval", 20*time.Second, "Web socket ping interval")
+	ec.addFlags()
 	flag.Parse()
 	var err error
 	config.width, config.height, err = parseSize(size)
 	if err != nil {
 		return err
 	}
+	config.encodeOptions = ec.options()
 	exe, err := os.Executable()
 	if err != nil {
 		return err
 	}
 	config.wsRoot = filepath.Dir(exe)
+	l := log.New()
+	l.Infoln("Encoding options:", strings.Join(config.encodeOptions, " "))
 	h := &handler{
-		log:    log.New(),
+		log:    l,
 		config: &config,
 	}
 	return http.ListenAndServe(config.listen, h)

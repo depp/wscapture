@@ -1,15 +1,64 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
+
+type encodeConfig struct {
+	codec     string
+	crf       int
+	preset    string
+	profile   string
+	pixFormat string
+	tune      string
+	extra     string
+}
+
+func (c *encodeConfig) addFlags() {
+	flag.StringVar(&c.codec, "codec", "libx264", "FFmpeg codec")
+	flag.IntVar(&c.crf, "crf", -1, "CRF (lower numbers are higher quality)")
+	flag.StringVar(&c.preset, "preset", "", "encoder preset")
+	flag.StringVar(&c.profile, "profile", "", "encoder profile")
+	flag.StringVar(&c.pixFormat, "pix_fmt", "", "video pixel format")
+	flag.StringVar(&c.tune, "tune", "", "encoder tuning")
+	flag.StringVar(&c.extra, "encode_options", "", "encoder options")
+}
+
+func (c *encodeConfig) options() []string {
+	var r []string
+	if c.codec == "libx264" {
+		if c.crf == 0 {
+			c.crf = 18
+		}
+		if c.preset == "" {
+			c.preset = "fast"
+		}
+	}
+	r = append(r, "-codec:v", c.codec)
+	if c.crf != -1 {
+		r = append(r, "-crf", strconv.Itoa(c.crf))
+	}
+	if c.preset != "" {
+		r = append(r, "-preset", c.preset)
+	}
+	if c.profile != "" {
+		r = append(r, "-profile:v", c.profile)
+	}
+	if c.tune != "" {
+		r = append(r, "-tune:v", c.tune)
+	}
+	r = append(r, strings.Fields(c.extra)...)
+	return r
+}
 
 const fileNameFormat = "2006-01-02T15-04-05"
 
@@ -59,11 +108,9 @@ func newFFmpegEncoder(log *log.Logger, c *config) (e *pipeEncoder, err error) {
 		"-r", strconv.FormatFloat(c.framerate, 'f', -1, 64),
 		"-s", fmt.Sprintf("%dx%d", c.width, c.height),
 		"-i", "pipe:3",
-		"-codec:v", "libx264",
-		"-preset", "fast",
-		"-crf", "18",
-		fname,
 	)
+	cmd.Args = append(cmd.Args, c.encodeOptions...)
+	cmd.Args = append(cmd.Args, fname)
 	cmd.Dir = c.videoDir
 	cmd.ExtraFiles = []*os.File{r}
 	cmd.Stdout = os.Stdout
